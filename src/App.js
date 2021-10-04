@@ -71,6 +71,19 @@ class App extends React.Component {
             this.db.mutationCreateList(newList);
         });
     }
+    renameItem = (index, newName) => {
+        let newCurrentList = this.state.currentList;
+        newCurrentList.items[index-1] = newName;
+        this.setState(prevState => ({
+            currentList: newCurrentList,
+            sessionData: prevState.sessionData
+        }), () => {
+            let list = this.db.queryGetList(newCurrentList.key);
+            list.items[index-1] = newName;
+            this.db.mutationUpdateList(list);
+            this.db.mutationUpdateSessionData(this.state.sessionData);
+        });
+    }
     renameList = (key, newName) => {
         let newKeyNamePairs = [...this.state.sessionData.keyNamePairs];
         // NOW GO THROUGH THE ARRAY AND FIND THE ONE TO RENAME
@@ -112,6 +125,7 @@ class App extends React.Component {
             sessionData: prevState.sessionData
         }), () => {
             // ANY AFTER EFFECTS?
+            
         });
     }
     // THIS FUNCTION BEGINS THE PROCESS OF CLOSING THE CURRENT LIST
@@ -142,6 +156,16 @@ class App extends React.Component {
         let modal = document.getElementById("delete-modal");
         modal.classList.remove("is-visible");
     }
+
+    confirmDeleteListModal() {
+        let modal = document.getElementById("delete-modal");
+        this.setState(prevState => ({
+            currentList: null
+        }), () => {
+            modal.classList.remove("is-visible");
+        });
+    }
+
     render() {
         return (
             <div id="app-root">
@@ -158,11 +182,14 @@ class App extends React.Component {
                     renameListCallback={this.renameList}
                 />
                 <Workspace
-                    currentList={this.state.currentList} />
+                    currentList={this.state.currentList}
+                    renameItemCallback={this.renameItem}
+                />
                 <Statusbar 
                     currentList={this.state.currentList} />
                 <DeleteModal
                     hideDeleteListModalCallback={this.hideDeleteListModal}
+                    confirmDeleteListModalCallback={this.confirmDeleteListModal}
                 />
             </div>
         );
