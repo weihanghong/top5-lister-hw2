@@ -136,13 +136,21 @@ class App extends React.Component {
             sessionData: this.state.sessionData
         }), () => {
             // ANY AFTER EFFECTS?
+            
         });
     }
-    deleteList = () => {
+    deleteList = (keyNamePair) => {
         // SOMEHOW YOU ARE GOING TO HAVE TO FIGURE OUT
         // WHICH LIST IT IS THAT THE USER WANTS TO
         // DELETE AND MAKE THAT CONNECTION SO THAT THE
         // NAME PROPERLY DISPLAYS INSIDE THE MODAL
+        let newKeyNamePairs = [...this.state.sessionData.keyNamePairs];
+        for (let i = 0; i < newKeyNamePairs.length; i++) {
+            let pair = newKeyNamePairs[i];
+            if (pair.key === keyNamePair.key) {
+                
+            }
+        }
         this.showDeleteListModal();
     }
     // THIS FUNCTION SHOWS THE MODAL FOR PROMPTING THE USER
@@ -159,10 +167,18 @@ class App extends React.Component {
 
     confirmDeleteListModal() {
         let modal = document.getElementById("delete-modal");
+        let newKeyNamePairs = {};
         this.setState(prevState => ({
-            currentList: null
+            currentList: null,
+            sessionData: {
+                nextKey: prevState.sessionData.nextKey,
+                counter: prevState.sessionData.counter-1,
+                keyNamePairs: newKeyNamePairs
+            }
         }), () => {
             modal.classList.remove("is-visible");
+            this.db.mutationUpdateSessionData(this.state.sessionData);
+            this.closeCurrentList();
         });
     }
 

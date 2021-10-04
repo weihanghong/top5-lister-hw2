@@ -44,6 +44,7 @@ export default class Top5Item extends React.Component {
                     onBlur={this.handleBlur}
                     onChange={this.handleUpdate}
                     defaultValue={item}
+                    autoFocus
                 />)
         }
         else {
@@ -55,7 +56,8 @@ export default class Top5Item extends React.Component {
                     className={'top5-item'}>
                     <span
                         id={"top5-item-text-" + index}
-                        className="top5-item-text">
+                        className="top5-item-text"
+                        autoFocus>
                         {item}
                     </span>
                 </div>

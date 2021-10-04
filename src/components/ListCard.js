@@ -62,6 +62,7 @@ export default class ListCard extends React.Component {
                     onBlur={this.handleBlur}
                     onChange={this.handleUpdate}
                     defaultValue={keyNamePair.name}
+                    autoFocus
                 />)
         }
         else {
@@ -87,7 +88,8 @@ export default class ListCard extends React.Component {
                         id={"delete-list-" + keyNamePair.key}
                         className="list-card-button"
                         onClick={this.handleDeleteList}
-                        value={"\u2715"} />
+                        value={"\u2715"} 
+                        autoFocus/>
                 </div>
             );
         }
