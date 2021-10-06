@@ -336,6 +336,17 @@ class App extends React.Component {
         }
     }
 
+    controlzy = (event) => {
+        if(event.code === "ControlLeft") {
+            if(event.code === "ControlLeft") {
+                this.undo();
+            }
+            if(event.code === "KeyY") {
+                this.redo();
+            }
+        }
+    }
+
     render() {
         return (
             <div id="app-root">
