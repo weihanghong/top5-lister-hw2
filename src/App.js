@@ -11,6 +11,13 @@ import Sidebar from './components/Sidebar.js'
 import Workspace from './components/Workspace.js';
 import Statusbar from './components/Statusbar.js'
 
+import RenameList_Transaction from './components/transactions/RenameList_Transaction'
+import RenameItem_Transaction from './components/transactions/RenameItem_Transaction';
+import MoveItem_Transaction from './components/transactions/MoveItem_Transaction';
+import DeleteList_Transaction from './components/transactions/DeleteList_Transaction';
+import jsTPS from './common/jsTPS';
+
+
 class App extends React.Component {
     constructor(props) {
         super(props);
@@ -24,8 +31,11 @@ class App extends React.Component {
         // SETUP THE INITIAL STATE
         this.state = {
             currentList : null,
-            sessionData : loadedSessionData
+            sessionData : loadedSessionData,
+            title: null
         }
+
+        this.tps = new jsTPS();
     }
     sortKeyNamePairsByName = (keyNamePairs) => {
         keyNamePairs.sort((keyPair1, keyPair2) => {
@@ -69,20 +79,35 @@ class App extends React.Component {
             // PUTTING THIS NEW LIST IN PERMANENT STORAGE
             // IS AN AFTER EFFECT
             this.db.mutationCreateList(newList);
+            this.closeVisible();
+            this.undoInvisible();
+            this.redoInvisible();
         });
     }
     renameItem = (index, newName) => {
         let newCurrentList = this.state.currentList;
-        newCurrentList.items[index-1] = newName;
+        newCurrentList.items[index] = newName;
         this.setState(prevState => ({
             currentList: newCurrentList,
             sessionData: prevState.sessionData
         }), () => {
             let list = this.db.queryGetList(newCurrentList.key);
-            list.items[index-1] = newName;
+            list.items[index] = newName;
             this.db.mutationUpdateList(list);
             this.db.mutationUpdateSessionData(this.state.sessionData);
+            if(!this.tps.hasTransactionToUndo()) {
+                this.undoInvisible();
+            } else {this.undoVisible();}
+            if(!this.tps.hasTransactionToRedo()) {
+                this.redoInvisible();
+            } else {this.redoVisible();}
+
         });
+    }
+    addRenameItemTransaction = (index, newName) => {
+        let oldName = this.state.currentList.items[index-1];
+        let transaction = new RenameItem_Transaction(this, index-1, oldName, newName);
+        this.tps.addTransaction(transaction);
     }
     renameList = (key, newName) => {
         let newKeyNamePairs = [...this.state.sessionData.keyNamePairs];
@@ -117,6 +142,11 @@ class App extends React.Component {
             this.db.mutationUpdateSessionData(this.state.sessionData);
         });
     }
+    addRenameListTransaction = (key, newName) => {
+        let oldName = this.state.currentList.name;
+        let transaction = new RenameList_Transaction(this, key, oldName, newName);
+        this.tps.addTransaction(transaction);
+    }
     // THIS FUNCTION BEGINS THE PROCESS OF LOADING A LIST FOR EDITING
     loadList = (key) => {
         let newCurrentList = this.db.queryGetList(key);
@@ -125,7 +155,10 @@ class App extends React.Component {
             sessionData: prevState.sessionData
         }), () => {
             // ANY AFTER EFFECTS?
-            
+            this.closeVisible();
+            this.undoInvisible();
+            this.redoInvisible();
+            this.tps.clearAllTransactions();
         });
     }
     // THIS FUNCTION BEGINS THE PROCESS OF CLOSING THE CURRENT LIST
@@ -136,7 +169,10 @@ class App extends React.Component {
             sessionData: this.state.sessionData
         }), () => {
             // ANY AFTER EFFECTS?
-            
+            this.closeInvisible();
+            this.undoInvisible();
+            this.redoInvisible();
+            this.tps.clearAllTransactions();
         });
     }
     deleteList = (keyNamePair) => {
@@ -144,13 +180,10 @@ class App extends React.Component {
         // WHICH LIST IT IS THAT THE USER WANTS TO
         // DELETE AND MAKE THAT CONNECTION SO THAT THE
         // NAME PROPERLY DISPLAYS INSIDE THE MODAL
-        let newKeyNamePairs = [...this.state.sessionData.keyNamePairs];
-        for (let i = 0; i < newKeyNamePairs.length; i++) {
-            let pair = newKeyNamePairs[i];
-            if (pair.key === keyNamePair.key) {
-                
-            }
-        }
+        let name = keyNamePair.name;
+        this.setState(prevState => ({
+            title: name
+        }))
         this.showDeleteListModal();
     }
     // THIS FUNCTION SHOWS THE MODAL FOR PROMPTING THE USER
@@ -165,7 +198,7 @@ class App extends React.Component {
         modal.classList.remove("is-visible");
     }
 
-    confirmDeleteListModal() {
+    confirmDeleteListModal = () => {
         let modal = document.getElementById("delete-modal");
         let newKeyNamePairs = {};
         this.setState(prevState => ({
@@ -182,12 +215,76 @@ class App extends React.Component {
         });
     }
 
+    addConfirmDeleteTransaction = (key) => {
+        let transaction = new DeleteList_Transaction(this, key);
+        this.tps.addTransaction(transaction);
+    }
+
+    addMoveItemTransaction = (keyNamePair) => {
+        let oldIndex = this.currentList;
+        let newIndex = keyNamePair.key;
+        let transaction = new MoveItem_Transaction(this, oldIndex, newIndex);
+        this.tps.addTransaction(transaction);
+    }
+
+    closeVisible = () => {
+        let close = document.getElementById("close-button");
+            close.classList.remove("top5-button-disabled");
+            close.classList.add("top5-button");
+    }
+
+    closeInvisible = () => {
+        let close = document.getElementById("close-button");
+            close.classList.remove("top5-button");
+            close.classList.add("top5-button-disabled");
+    }
+
+    undoVisible = () => {
+        let undo = document.getElementById("undo-button");
+            undo.classList.remove("top5-button-disabled");
+            undo.classList.add("top5-button");
+    }
+
+    undoInvisible = () => {
+        let undo = document.getElementById("undo-button");
+            undo.classList.remove("top5-button");
+            undo.classList.add("top5-button-disabled");
+    }
+
+    redoVisible = () => {
+        let redo = document.getElementById("redo-button");
+            redo.classList.remove("top5-button-disabled");
+            redo.classList.add("top5-button");
+    }
+
+    redoInvisible = () => {
+        let redo = document.getElementById("redo-button");
+            redo.classList.remove("top5-button");
+            redo.classList.add("top5-button-disabled");
+    }
+
+    undo = () => {
+        if (this.tps.hasTransactionToUndo()) {
+            this.tps.undoTransaction();
+            this.redoVisible();
+        }
+    }
+
+    redo = () => {
+        if (this.tps.hasTransactionToRedo()) {
+            this.tps.doTransaction();
+            this.undoVisible();
+        }
+    }
+
     render() {
         return (
             <div id="app-root">
                 <Banner 
                     title='Top 5 Lister'
-                    closeCallback={this.closeCurrentList} />
+                    closeCallback={this.closeCurrentList}
+                    undoCallback={this.undo}
+                    redoCallback={this.redo} />
                 <Sidebar
                     heading='Your Lists'
                     currentList={this.state.currentList}
@@ -195,17 +292,18 @@ class App extends React.Component {
                     createNewListCallback={this.createNewList}
                     deleteListCallback={this.deleteList}
                     loadListCallback={this.loadList}
-                    renameListCallback={this.renameList}
+                    renameListCallback={this.addRenameListTransaction}
                 />
                 <Workspace
                     currentList={this.state.currentList}
-                    renameItemCallback={this.renameItem}
+                    renameItemCallback={this.addRenameItemTransaction}
                 />
                 <Statusbar 
                     currentList={this.state.currentList} />
                 <DeleteModal
                     hideDeleteListModalCallback={this.hideDeleteListModal}
-                    confirmDeleteListModalCallback={this.confirmDeleteListModal}
+                    confirmDeleteListModalCallback={this.addRenameItemTransaction}
+                    listKeyPair={this.state.title}
                 />
             </div>
         );

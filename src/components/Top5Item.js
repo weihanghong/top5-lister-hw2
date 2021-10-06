@@ -31,6 +31,9 @@ export default class Top5Item extends React.Component {
         this.props.renameItemCallback(this.props.index, textValue);
         this.handleToggleEdit();
     }
+    handleDragStart = () => {
+        
+    }
     render() {
         const { index, item } = this.props;
 
@@ -57,7 +60,8 @@ export default class Top5Item extends React.Component {
                     <span
                         id={"top5-item-text-" + index}
                         className="top5-item-text"
-                        autoFocus>
+                        draggable="true"
+                        onDragStart={this.handleDragStart}>
                         {item}
                     </span>
                 </div>

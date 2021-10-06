@@ -20,10 +20,10 @@ export default class Workspace extends React.Component {
                         </div>
                         <div id="edit-items">
                             {
-                                currentList.items.map((item, i) => (
+                                currentList.items.map((i, index) => (
                                     <Top5Item
-                                        item={item}
-                                        index={i+1}
+                                        item={i}
+                                        index={index+1}
                                         renameItemCallback={renameItemCallback}
                                     />
                                 ))
