@@ -32,7 +32,7 @@ class App extends React.Component {
         this.state = {
             currentList : null,
             sessionData : loadedSessionData,
-            title: null
+            listKeyPair: null
         }
 
         this.tps = new jsTPS();
@@ -101,7 +101,6 @@ class App extends React.Component {
             if(!this.tps.hasTransactionToRedo()) {
                 this.redoInvisible();
             } else {this.redoVisible();}
-
         });
     }
     addRenameItemTransaction = (index, newName) => {
@@ -181,8 +180,9 @@ class App extends React.Component {
         // DELETE AND MAKE THAT CONNECTION SO THAT THE
         // NAME PROPERLY DISPLAYS INSIDE THE MODAL
         let name = keyNamePair.name;
+        let key = keyNamePair.key;
         this.setState(prevState => ({
-            title: name
+            listKeyPair: {'name': name, 'key': key}
         }))
         this.showDeleteListModal();
     }
@@ -198,33 +198,94 @@ class App extends React.Component {
         modal.classList.remove("is-visible");
     }
 
-    confirmDeleteListModal = () => {
-        let modal = document.getElementById("delete-modal");
-        let newKeyNamePairs = {};
+    addList = (removed) => {
+        let newKeyNamePairs = [...this.state.sessionData.keyNamePairs];
+        newKeyNamePairs.push(removed.pop());
+        this.sortKeyNamePairsByName(newKeyNamePairs);
         this.setState(prevState => ({
-            currentList: null,
-            sessionData: {
+            currentList: prevState.currentList,
+            sessionData: 
+            {
                 nextKey: prevState.sessionData.nextKey,
-                counter: prevState.sessionData.counter-1,
+                counter: prevState.sessionData.counter+1,
                 keyNamePairs: newKeyNamePairs
             }
         }), () => {
-            modal.classList.remove("is-visible");
             this.db.mutationUpdateSessionData(this.state.sessionData);
-            this.closeCurrentList();
+            if(!this.tps.hasTransactionToUndo()) {
+                this.undoInvisible();
+            } else {this.undoVisible();}
+            if(!this.tps.hasTransactionToRedo()) {
+                this.redoInvisible();
+            } else {this.redoVisible();}
         });
     }
 
-    addConfirmDeleteTransaction = (key) => {
+    confirmDeleteListModal = (key) => {
+        let modal = document.getElementById("delete-modal");
+        let newKeyNamePairs = [...this.state.sessionData.keyNamePairs];
+        let removed = null;
+        for (let i = 0; i < newKeyNamePairs.length; i++) {
+            let pair = newKeyNamePairs[i];
+            if (pair.key === key) {
+                removed = newKeyNamePairs.splice(i, 1);
+            }
+        }
+        if(this.state.currentList===null || this.state.currentList.key===key) {
+            this.setState(prevState => ({
+                currentList: null,
+                sessionData: 
+                {
+                    nextKey: prevState.sessionData.nextKey,
+                    counter: prevState.sessionData.counter-1,
+                    keyNamePairs: newKeyNamePairs
+                }
+            }), () => {
+                modal.classList.remove("is-visible");
+                this.closeInvisible();
+                if(!this.tps.hasTransactionToUndo()) {
+                    this.undoInvisible();
+                } else {this.undoVisible();}
+                if(!this.tps.hasTransactionToRedo()) {
+                    this.redoInvisible();
+                } else {this.redoVisible();}
+                this.db.mutationUpdateSessionData(this.state.sessionData);
+            });
+        }   else {this.setState(prevState => ({
+                currentList: prevState.currentList,
+                sessionData: 
+                {
+                    nextKey: prevState.sessionData.nextKey,
+                    counter: prevState.sessionData.counter-1,
+                    keyNamePairs: newKeyNamePairs
+                }
+            }), () => {
+                modal.classList.remove("is-visible");
+                if(!this.tps.hasTransactionToUndo()) {
+                    this.undoInvisible();
+                } else {this.undoVisible();}
+                if(!this.tps.hasTransactionToRedo()) {
+                    this.redoInvisible();
+                } else {this.redoVisible();}
+                this.db.mutationUpdateSessionData(this.state.sessionData);
+            });
+        }
+        return removed;
+    }
+
+    addConfirmDeleteTransaction = (keyNamePair) => {
+        let key = keyNamePair.key;
         let transaction = new DeleteList_Transaction(this, key);
         this.tps.addTransaction(transaction);
     }
 
-    addMoveItemTransaction = (keyNamePair) => {
-        let oldIndex = this.currentList;
-        let newIndex = keyNamePair.key;
-        let transaction = new MoveItem_Transaction(this, oldIndex, newIndex);
+    addMoveItemTransaction = (oldId, newId) => {
+        let transaction = new MoveItem_Transaction(this, oldId, newId);
         this.tps.addTransaction(transaction);
+    }
+
+    moveItem = (oldId, newId) => {
+        let list = this.state.currentList;
     }
 
     closeVisible = () => {
@@ -266,14 +327,12 @@ class App extends React.Component {
     undo = () => {
         if (this.tps.hasTransactionToUndo()) {
             this.tps.undoTransaction();
-            this.redoVisible();
         }
     }
 
     redo = () => {
         if (this.tps.hasTransactionToRedo()) {
             this.tps.doTransaction();
-            this.undoVisible();
         }
     }
 
@@ -297,13 +356,14 @@ class App extends React.Component {
                 <Workspace
                     currentList={this.state.currentList}
                     renameItemCallback={this.addRenameItemTransaction}
+                    addMoveItemCallback={this.addMoveItemTransaction}
                 />
                 <Statusbar 
                     currentList={this.state.currentList} />
                 <DeleteModal
                     hideDeleteListModalCallback={this.hideDeleteListModal}
-                    confirmDeleteListModalCallback={this.addRenameItemTransaction}
-                    listKeyPair={this.state.title}
+                    confirmDeleteListModalCallback={this.addConfirmDeleteTransaction}
+                    listKeyPair={this.state.listKeyPair}
                 />
             </div>
         );

@@ -13,6 +13,6 @@ export default class DeleteList_Transaction extends jsTPS_Transaction {
     }
     
     undoTransaction() {
-        this.app.addList(this.key, this.removed);
+        this.app.addList(this.removed);
     }
 }

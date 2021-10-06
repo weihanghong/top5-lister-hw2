@@ -31,8 +31,20 @@ export default class Top5Item extends React.Component {
         this.props.renameItemCallback(this.props.index, textValue);
         this.handleToggleEdit();
     }
-    handleDragStart = () => {
-        
+    handleDragStart = (event) => {
+        event.dataTransfer.setData("key", event.target.id);
+    }
+    handleDragOver = (event) => {
+        event.preventDefault();
+    }
+    handleDrop = (event) => {
+        event.preventDefault();
+        if (event.target.className === "top5-item") {
+            let data = event.dataTransfer.getData("key");
+            let oldId = data.substring(5);
+            let destId = event.target.id.substring(5);
+            this.props.addMoveItemCallback(parseInt(oldId), parseInt(destId));
+        }
     }
     render() {
         const { index, item } = this.props;
@@ -61,7 +73,9 @@ export default class Top5Item extends React.Component {
                         id={"top5-item-text-" + index}
                         className="top5-item-text"
                         draggable="true"
-                        onDragStart={this.handleDragStart}>
+                        onDragStart={this.handleDragStart}
+                        onDragOver={this.handleDragOver}
+                        onDrop={this.handleDrop}>
                         {item}
                     </span>
                 </div>

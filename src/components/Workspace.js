@@ -3,9 +3,12 @@ import Top5Item from "./Top5Item";
 
 export default class Workspace extends React.Component {
     render() {
-        const { 
+        const 
+        { 
             currentList,
-            renameItemCallback} = this.props;
+            renameItemCallback,
+            addMoveItemCallback
+        } = this.props;
 
         if(currentList!==null) {
             return (
@@ -25,6 +28,7 @@ export default class Workspace extends React.Component {
                                         item={i}
                                         index={index+1}
                                         renameItemCallback={renameItemCallback}
+                                        addMoveItemCallback={addMoveItemCallback}
                                     />
                                 ))
                                 

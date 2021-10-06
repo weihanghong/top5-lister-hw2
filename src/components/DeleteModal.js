@@ -1,8 +1,12 @@
 import React, { Component } from 'react';
 
 export default class DeleteModal extends Component {
+    handleConfirmDelete = () => {
+        this.props.confirmDeleteListModalCallback(this.props.listKeyPair);
+    }
+
     render() {
-        const { listKeyPair, hideDeleteListModalCallback, confirmDeleteListModalCallback } = this.props;
+        const { listKeyPair, hideDeleteListModalCallback } = this.props;
         let name = "";
         if (listKeyPair) {
             name = listKeyPair.name;
@@ -14,13 +18,13 @@ export default class DeleteModal extends Component {
                 data-animation="slideInOutLeft">
                 <div className="modal-dialog">
                     <header className="dialog-header">
-                        Delete the {name} Top 5 List?
+                        Delete {name} list?
                     </header>
                     <div id="confirm-cancel-container">
                         <button
                             id="dialog-yes-button"
                             className="modal-button"
-                            onClick={confirmDeleteListModalCallback}
+                            onClick={this.handleConfirmDelete}
                         >Confirm</button>
                         <button
                             id="dialog-no-button"
